@@ -1,0 +1,4 @@
+/node_modules
+/HederaHackUI/node_modules
+.env
+/HederaHackUI/.angular

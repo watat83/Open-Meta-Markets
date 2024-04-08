@@ -1,0 +1,47 @@
+* {
+  color: white
+}
+
+.sidenav-container {
+  height: 100%;
+  background: whitesmoke;
+  // background: #0f1848;
+}
+
+.mat-sidenav {
+  background: #3f51b5;
+  color: white
+}
+
+.sidenav {
+  width: 250px;
+  color: white
+}
+
+.mat-nav-list {
+  padding: 0
+}
+
+.sidenav .mat-toolbar {
+  background: inherit;
+}
+
+.mat-toolbar.mat-primary {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+}
+
+a:link {
+  color: white;
+}
+
+a.active {
+  background-color: #1b2452;
+  color: white;
+}
+
+a:visited {
+  background-color: #3f51b5;
+  color: white;
+}

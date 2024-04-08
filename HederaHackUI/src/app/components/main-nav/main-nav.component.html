@@ -1,0 +1,43 @@
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #drawer class="sidenav" fixedInViewport [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isHandset$ | async) ? 'push' : 'side'" [opened]="(isHandset$ | async) === false">
+    <mat-toolbar>Menu</mat-toolbar>
+    <mat-nav-list>
+      <a mat-list-item [routerLink]="['/dashboard']" [routerLinkActive]="['active']" (click)="drawer.toggle()">
+        <mat-icon aria-hidden="false" aria-label="dashboard icon">dashboard</mat-icon>Dashboard
+      </a>
+      <a mat-list-item [routerLink]="['/accounts']" [routerLinkActive]="['active']" (click)="drawer.toggle()">
+        <mat-icon aria-hidden="false" aria-label="course icon">person</mat-icon>Accounts
+      </a>
+      <a mat-list-item [routerLink]="['/signup']" [routerLinkActive]="['active']" (click)="drawer.toggle()">
+        <mat-icon aria-hidden="false" aria-label="course icon">person</mat-icon>Signup
+      </a>
+      <a mat-list-item [routerLink]="['/jobs']" [routerLinkActive]="['active']" (click)="drawer.toggle()">
+        <mat-icon aria-hidden="false" aria-label="course icon">work</mat-icon> Jobs
+      </a>
+      <!-- <a mat-list-item [routerLink]="['/business']" [routerLinkActive]="['active']" (click)="drawer.toggle()">
+        <mat-icon aria-hidden="false" aria-label="location icon">location_city</mat-icon> Business
+      </a>
+      <a mat-list-item [routerLink]="['/courses']" [routerLinkActive]="['active']" (click)="drawer.toggle()">
+        <mat-icon aria-hidden="false" aria-label="course icon">local_library</mat-icon>Courses
+      </a>
+      <a mat-list-item [routerLink]="['/students']" [routerLinkActive]="['active']" (click)="drawer.toggle()">
+        <mat-icon aria-hidden="false" aria-label="student icon">person</mat-icon>Students
+      </a> -->
+
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button type="button" aria-label="Toggle sidenav" mat-icon-button (click)="drawer.toggle()">
+        <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+      </button>
+      <span>Open Meta Markets</span>
+    </mat-toolbar>
+    <!-- Add Content Here -->
+
+    <div style="padding: 15px">
+      <ng-content></ng-content>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

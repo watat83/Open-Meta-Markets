@@ -1,0 +1,69 @@
+.accounts-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+
+    .account-wrapper,
+    .account-contact-wrapper {
+        display: grid;
+        /* grid-template-columns: repeat(3, 1fr); */
+        // margin-bottom: 16px;
+        grid-gap: 10px;
+        grid-template-columns: repeat(2, minmax(200px, 1fr));
+    }
+
+    .account-list-container {
+
+        position: relative;
+
+        .loading-shade {
+            position: absolute;
+            z-index: 1000;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+            background: rgba(154, 154, 154, 0.81);
+            opacity: .90;
+
+            mat-spinner {
+                position: relative;
+                // z-index: 1000;
+                margin: auto auto;
+                width: 100%;
+                height: 100%;
+                // background: blue;
+            }
+        }
+    }
+
+
+
+    .account-table-list {
+
+        table.mat-table {
+            width: 100%;
+        }
+
+        .account-filter {
+            padding: 20px 0;
+            width: 80%;
+            margin: 0 auto;
+
+            .mat-form-field {
+                font-size: 14px;
+                width: 100%;
+
+                input.mat-input-element {
+                    color: #484a4c;
+                }
+            }
+        }
+    }
+
+
+    .table-container {
+        table {
+            width: 100%
+        }
+    }
+}

@@ -1,0 +1,49 @@
+Hedera UI Dev Pro
+
+Part I - NFT Minting / Signup Profiles
+
+1. NFT Collection Model: _id, _name, _symbol, _memo, _mintingFee, _totalSupply, _tokenId, _ownerId
+
+This Collection Model will store information about the collection that will be used to mint  and transfer NFTs. The main functionalities are:
+    - Delete all documents related the NFT Collection Model & NFT Serial Model
+    - Deploy a new NFT Collection on Hedera.
+    - Save the new NFT Collection metadata inside the NFT Collection Model.
+
+2. NFT Serial Model (Signup page): _id, _serial, _tokenId, _ipfsHash, _ownerId, _ownerAddressSolidity
+
+This NFT Serial Model will store information about every single NFT that is minted. The main functionalities are:
+    - Save a newly minted NFT inside the DB
+    - Fetch NFTs by _serial, _ownerId, _id, _ipfsHash, etc.
+    - List all NFTs
+    
+3. User Account Models: _id, name, _accountId, _solidityAddress, _pvKey, _pbKey, 
+
+	These two user accounts will be used to send requests and perform operations on the Hedera network. The main functionalities are:
+    - List all user accounts
+    - Fetch one user account
+ 
+Part II - Job Posting
+
+4. Contract Model (Job Posting): _id, _title, _ownerId, _contractId, _addressSolidity
+
+This contract Model will help deploy a new contract. The main functionalities are:
+    - Deploy a new contract to Hedera (Create New Instance)
+    - Delete old model from the DB and save the new one to the DB  
+
+5. Job Model: _id, _jobId, _jobTitle, _paymentMethod, _accountId, _account
+
+This Model will help manage various Jobs created by different accounts. The main functionalities are:
+    - Create a new Job and save metadata to Hedera
+    - Fetch one job by account
+    - Fetch all jobs by account
+    - NO NEED TO SAVE JOB MODEL TO DB. DATA IS FETCHED STRAIGHT FROM THE BLOCKCHAIN
+
+6. UI Components
+    - Job Posting Contract Component: _contractId, _title, _ownerId, _solidityAddress, _jobCount
+    - Job Posting Contract Form Component: This for will reset the contrat model in the database + 
+        deploy a new version to Hedera
+    - Job Post Form Component: _jobId, _title, _paymentMethod, _ownerId
+    - Job Post List Component: List Jobs
+        - By Account
+        - All Jobs
+        - One Job

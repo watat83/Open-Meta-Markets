@@ -1,0 +1,13 @@
+{
+  "/api/*": [
+    {
+      "target": "http://localhost:2022",
+      "secure": false
+    },
+    {
+      "target": "https://open-meta-markets.herokuapp.com",
+      "secure": true,
+      "changeOrigin": true
+    }
+  ]
+}

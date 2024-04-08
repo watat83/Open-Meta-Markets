@@ -1,0 +1,14 @@
+.job-post-form-wrapper,
+.job-post-form-contact-wrapper {
+    display: grid;
+    /* grid-template-columns: repeat(3, 1fr); */
+    // margin-bottom: 16px;
+    grid-gap: 10px;
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+}
+
+
+.tooltip-metadata {
+    background: #3f51b5 !important;
+    width: 100% !important;
+}

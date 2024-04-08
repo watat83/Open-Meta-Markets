@@ -1,0 +1,21 @@
+###
+
+GET http://localhost:2022/api/courses HTTP/1.1
+
+###
+GET http://localhost:2022/api/accounts HTTP/1.1
+
+###
+
+GET http://localhost:2022/api/courses/6095fbc8a3695d52c120c62b HTTP/1.1
+
+###
+
+GET http://localhost:2022/api/businesses HTTP/1.1
+
+###
+
+GET http://localhost:2022/api/businesses/6095fbc8a3695d52c120c62b HTTP/1.1
+
+###
+

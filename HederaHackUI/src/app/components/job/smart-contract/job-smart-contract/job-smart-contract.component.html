@@ -1,0 +1,43 @@
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>JOB CONTRACT ID <span> <a target="_blank"
+                    href="https://hashscan.io/testnet/contract/{{jobSmartContract?.contractId}}">{{jobSmartContract?.contractId}}</a></span>
+        </mat-card-title>
+    </mat-card-header>
+    <mat-divider></mat-divider>
+    <mat-card-content>
+        <div class="job-smart-contract-content">
+            <div class="job-smart-contract-content-left">
+                <div class="job-smart-contract-content-left-item">
+                    <span class="title">Title</span>
+                    <span class="content">{{jobSmartContract?.title}}</span>
+                </div>
+                <div class="job-smart-contract-content-left-item">
+                    <span class="title">Description</span>
+                    <span class="content">{{jobSmartContract?.description}}</span>
+                </div>
+                <div class="job-smart-contract-content-right-item">
+                    <span class="title">EVM Address</span>
+                    <span class="content">{{jobSmartContract?.solidityAddress}}</span>
+                </div>
+                <div class="job-smart-contract-content-right-item">
+                    <span class="title">Job Posts</span>
+                    <span class="content">{{jobPosts?.length | number}}</span>
+                </div>
+                <div class="job-smart-contract-content-left-item">
+                    <span class="title">Created</span>
+                    <span class="content">{{jobSmartContract?.created_at | date :'mediumDate'}}</span>
+                </div>
+            </div>
+            <div class="job-smart-contract-content-right">
+                <div class="job-smart-contract-content-right-item">
+                    <span class="title">Owner</span>
+                    <span class="content">{{jobSmartContract?.ownerId?.name}} - <a target="_blank"
+                            href="https://hashscan.io/testnet/account/{{jobSmartContract?.ownerId?.accountId}}">{{jobSmartContract?.ownerId?.accountId}}</a></span>
+                </div>
+
+            </div>
+
+        </div>
+    </mat-card-content>
+</mat-card>

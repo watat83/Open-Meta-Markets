@@ -1,0 +1,41 @@
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>NFT <span> <a target="_blank"
+                    href="https://hashscan.io/testnet/token/{{NFTCollection?.tokenId}}">{{NFTCollection?.tokenId}}</a></span>
+        </mat-card-title>
+    </mat-card-header>
+    <mat-divider></mat-divider>
+    <mat-card-content>
+        <div class="nft-collection-content">
+            <div class="nft-collection-content-left">
+                <div class="nft-collection-content-left-item">
+                    <span class="title">Name</span>
+                    <span class="content">{{NFTCollection?.name}}</span>
+                </div>
+                <div class="nft-collection-content-left-item">
+                    <span class="title">Symbol</span>
+                    <span class="content">{{NFTCollection?.symbol}}</span>
+                </div>
+                <div class="nft-collection-content-left-item">
+                    <span class="title">Memo</span>
+                    <span class="content">{{NFTCollection?.memo}}</span>
+                </div>
+            </div>
+            <div class="nft-collection-content-right">
+                <div class="nft-collection-content-right-item">
+                    <span class="title">Total Supply</span>
+                    <span class="content">{{NFTCollection?.totalSupply}}</span>
+                </div>
+                <div class="nft-collection-content-right-item">
+                    <span class="title">Max Supply</span>
+                    <span class="content">{{NFTCollection?.maxSupply}}</span>
+                </div>
+                <div class="nft-collection-content-right-item">
+                    <span class="title">EVM Address</span>
+                    <span class="content">{{NFTCollection?.solidityAddress}}</span>
+                </div>
+            </div>
+
+        </div>
+    </mat-card-content>
+</mat-card>
