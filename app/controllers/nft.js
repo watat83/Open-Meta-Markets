@@ -301,9 +301,14 @@ module.exports = {
     // Structure of the _data
     console.log(req.body);
     const fetchImage = await axios.get(
-      "https://randomuser.me/api/?gender=" + (req.body?.gender).toLowerCase()
+      "https://randomuser.me/api/?gender=" + (req.body?.gender).toLowerCase(),
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
-    let finalImage = await fetchImage.data;
+    let finalImage = fetchImage.data;
     // let finalImage = { image_url: "https://100k-faces.glitch.me/random-image" };
     // console.log(finalImage);
     finalImage = finalImage.results[0].picture.large;
@@ -362,7 +367,7 @@ module.exports = {
 
     _result = await tokenMinterFnc(
       _client,
-      _nftCollection[0].tokenId,
+      _nftCollection[0]?.tokenId,
       _metadata,
       _network
     );
@@ -370,7 +375,7 @@ module.exports = {
 
     _data.ipfsHash = _result?.hash;
     _data.serial = _result?.serial;
-    _data.tokenId = _nftCollection[0].tokenId;
+    _data.tokenId = _nftCollection[0]?.tokenId;
     try {
       const nftSerial = await new NFTSerial(_data);
       // console.log(nftSerial)
@@ -649,7 +654,7 @@ async function mintNFTsInBatch(_client, _tokenId, _CIDs, _network) {
   for (let i = 0; i < _CIDs.length; i++) {
     NFTs[i] = await tokenMinterFnc(_client, _tokenId, _CIDs[i], _network);
     console.log(
-      `Minted New Account as NFT with serial: ${NFTs[i].serials[0].low}`
+      `Minted New NFT Profile with serial: ${NFTs[i].serials[0].low}`
     );
   }
 }

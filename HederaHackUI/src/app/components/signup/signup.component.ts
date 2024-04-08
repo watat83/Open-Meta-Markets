@@ -204,7 +204,7 @@ export class SignupComponent implements OnInit, AfterViewInit {
           );
         },
         (error: any) => {
-          // console.log(error);
+          console.log(error);
           this._messageService.showNotification(
             "Something went wrong. Try again later",
             "OK!"
