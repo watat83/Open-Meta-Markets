@@ -303,7 +303,7 @@ module.exports = {
     const fetchImage = await axios.get(
       "https://randomuser.me/api/?gender=" + (req.body?.gender).toLowerCase()
     );
-    let finalImage = fetchImage.data;
+    let finalImage = await fetchImage.data;
     // let finalImage = { image_url: "https://100k-faces.glitch.me/random-image" };
     // console.log(finalImage);
     finalImage = finalImage.results[0].picture.large;
