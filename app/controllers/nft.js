@@ -86,37 +86,41 @@ const Account = require("../models/account");
 
 module.exports = {
   index: async (req, res, next) => {
-    let nftCollection = await NFTCollection.find({})
-      .sort({
-        name: 1,
-      })
-      .populate("ownerId", "_id name accountId");
-    nftCollection = nftCollection[0];
-
-    let _tokenId = nftCollection.tokenId;
-    const nftInfos = await checkTokenInfo(client, _tokenId);
-    // console.log(nftInfos);
-    const finalCollection = {
-      _id: nftCollection._id,
-      name: nftCollection.name,
-      symbol: nftCollection.symbol,
-      tokenId: _tokenId,
-      solidityAddress: TokenId.fromString(
-        nftCollection.tokenId
-      ).toSolidityAddress(),
-      memo: nftCollection.memo,
-      totalSupply: nftInfos.totalSupply.low,
-      maxSupply: nftInfos.maxSupply.low,
-      customFee: {
-        numerator: nftInfos.customFees[0]._numerator.low,
-        denominator: nftInfos.customFees[0]._denominator.low,
-      },
-      ownerId: nftCollection.ownerId,
-      accountId: nftCollection.accountId,
-      created_at: nftCollection.created_at,
-    };
     try {
-      // console.log(finalCollection)
+      let nftCollection = await NFTCollection.find({})
+        .sort({
+          name: 1,
+        })
+        .populate("ownerId", "_id name accountId");
+
+      if (!nftCollection.length) {
+        res.status(404).json({ message: "NFT Collection not found" });
+      }
+
+      nftCollection = nftCollection[0];
+      let _tokenId = nftCollection?.tokenId;
+      const nftInfos = await checkTokenInfo(client, _tokenId);
+      // console.log(nftInfos);
+      finalCollection = {
+        _id: nftCollection?._id,
+        name: nftCollection?.name,
+        symbol: nftCollection?.symbol,
+        tokenId: _tokenId,
+        solidityAddress: TokenId.fromString(
+          nftCollection?.tokenId
+        ).toSolidityAddress(),
+        memo: nftCollection?.memo,
+        totalSupply: nftInfos?.totalSupply?.low,
+        maxSupply: nftInfos.maxSupply.low,
+        customFee: {
+          numerator: nftInfos?.customFees[0]?._numerator.low,
+          denominator: nftInfos?.customFees[0]?._denominator.low,
+        },
+        ownerId: nftCollection?.ownerId,
+        accountId: nftCollection?.accountId,
+        created_at: nftCollection?.created_at,
+      };
+
       res.status(200).json(finalCollection);
     } catch (error) {
       // console.log(error);
@@ -299,7 +303,6 @@ module.exports = {
   },
   newNFTSerial: async (req, res, next) => {
     // Structure of the _data
-    console.log(req.body);
     const fetchImage = await axios.get(
       "https://randomuser.me/api/?gender=" + (req.body?.gender).toLowerCase(),
       {

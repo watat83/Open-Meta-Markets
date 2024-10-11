@@ -73,7 +73,7 @@ module.exports = {
       contractId: contractId || req.body.contractId,
       solidityAddress: contractId.toSolidityAddress(),
     });
-    // console.log('jobSmartContract', jobSmartContract)
+
     try {
       const newJobSmartContract = await jobSmartContract.save();
       res.status(200).json(newJobSmartContract);
@@ -82,28 +82,33 @@ module.exports = {
     }
   },
   newJobPostByAccount: async (req, res, next) => {
-    // Set Testnet Client
-    let _client;
-    let account = await Account.find({ _id: req.body.ownerId }).sort({
-      name: 1,
-    });
-    account = account[0];
-    // console.log('account', account);
-    if (account) {
-      _client = Client.forTestnet().setOperator(
-        account.accountId,
-        account.pvKey
-      );
-    } else {
-      _client = Client.forTestnet().setOperator(operatorId, operatorKey);
-    }
+    try {
+      // Set Testnet Client
+      let _client;
+      let account = await Account.find({ _id: req.body.ownerId }).sort({
+        name: 1,
+      });
+      account = account[0];
 
-    const jobSmartContract = await JobSmartContract.find({})
-      .sort({
-        title: 1,
-      })
-      .populate("ownerId", "_id name accountId");
-    if (jobSmartContract.length > 0) {
+      if (account) {
+        _client = Client.forTestnet().setOperator(
+          account.accountId,
+          account.pvKey
+        );
+      } else {
+        _client = Client.forTestnet().setOperator(operatorId, operatorKey);
+      }
+
+      const jobSmartContract = await JobSmartContract.find({})
+        .sort({
+          title: 1,
+        })
+        .populate("ownerId", "_id name accountId");
+
+      if (!jobSmartContract.length) {
+        res.status(404).json({ message: "Job Smart Contract not found" });
+      }
+
       const _jobPost = {
         title: req.body.title,
         description: req.body.description,
@@ -111,7 +116,6 @@ module.exports = {
         contractId: jobSmartContract[0].contractId,
         paymentMethod: req.body.paymentMethod,
       };
-      // console.log('_jobPost', _jobPost)
 
       await newJobPostByAccount(
         _client,
@@ -120,12 +124,11 @@ module.exports = {
         _jobPost.title,
         _jobPost.paymentMethod
       );
-      try {
-        res.status(200).json(_jobPost);
-      } catch (error) {
-        console.log(error);
-        res.status(500).json(error);
-      }
+
+      res.status(200).json(_jobPost);
+    } catch (error) {
+      console.log(error);
+      res.status(500).json(error);
     }
   },
   getAllJobPosts: async (req, res, next) => {
@@ -136,7 +139,7 @@ module.exports = {
       })
       .populate("ownerId", "_id name accountId");
     jobSmartContract = jobSmartContract[0];
-    // console.log('jobSmartContract', jobSmartContract);
+
     let accounts = await Account.find().sort({
       name: 1,
     });
@@ -144,25 +147,24 @@ module.exports = {
     try {
       for (let i = 0; i < accounts.length; i++) {
         let account = accounts[i];
-        // console.log('account', account);
+
         let _client = await Client.forTestnet().setOperator(
           account.accountId,
           account.pvKey
         );
 
-        // console.log('_client', _client);
-        let jobs = await getAllJobPostsByAccount(
+        const jobs = await getAllJobPostsByAccount(
           _client,
           "getAllJobsByAccount",
           account.accountId,
-          jobSmartContract.contractId
+          jobSmartContract.contractId,
+          account.solidityAddress,
         );
-        // jobs = jobs;
-        // console.log('jobs', jobs);
+
         if (jobs.length > 0) {
           for (let j = 0; j < jobs.length; j++) {
             const element = jobs[j];
-            // console.log('element', element);
+
             jobPosts.push({
               jobId: element.jobId,
               title: element.jobTitle,
@@ -173,7 +175,9 @@ module.exports = {
           }
         }
       }
+
       jobPosts = await UtilsArray.sortBy(jobPosts, "jobId", "asc");
+
       res.status(200).json(jobPosts);
     } catch (error) {
       console.log(error);
@@ -412,7 +416,7 @@ async function decodeFunctionResult(functionName, resultAsBytes) {
     resultHex
   );
   console.log("Done");
-  // console.log(result);
+
   return result;
 }
 
@@ -474,9 +478,10 @@ async function getAllJobPostsByAccount(
   _client,
   _functionName,
   _accountId,
-  _contractId
+  _contractId,
+  _accountEvmAddress
 ) {
-  console.log(operatorEVMAddress);
+  address = _accountEvmAddress || operatorEVMAddress;
   const contractQuery = await new ContractCallQuery()
     //Set the gas for the query
     .setGas(100000)
@@ -485,7 +490,7 @@ async function getAllJobPostsByAccount(
     //Set the contract function to call
     .setFunction(
       _functionName,
-      new ContractFunctionParameters().addAddress(operatorEVMAddress)
+      new ContractFunctionParameters().addAddress(address)
     )
     //Set the query payment for the node returning the request
     //This value must cover the cost of the request otherwise will fail
@@ -497,6 +502,7 @@ async function getAllJobPostsByAccount(
 
   console.log(`\nRETRIEVE ALL JOB POSTs BY ACCOUNT ======= \n`);
   const res = await decodeFunctionResult(_functionName, funcExec.bytes);
+
   // console.log(res[0]);
   return res[0];
 }
