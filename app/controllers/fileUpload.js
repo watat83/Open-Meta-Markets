@@ -4,12 +4,14 @@ const https = require("https");
 
 const { INFURA_IPFS_PROJECT_ID, INFURA_IPFS_PROJECT_SECRET } = process.env;
 
-const auth =
-  "Basic " + btoa(INFURA_IPFS_PROJECT_ID + ":" + INFURA_IPFS_PROJECT_SECRET);
+const auth = "Basic " + Buffer.from(
+  INFURA_IPFS_PROJECT_ID+":"+INFURA_IPFS_PROJECT_SECRET
+).toString("base64");
 
 const ipfs_remote = create({
   host: "ipfs.infura.io",
   port: 5001,
+  path: "/api/v0/add",
   protocol: "https",
   headers: {
     authorization: auth,
@@ -18,9 +20,10 @@ const ipfs_remote = create({
 const ipfs_local = create({
   host: "localhost",
   port: 5001,
+  path: "/api/v0/add",
   protocol: "http",
   headers: {
-    authorization: "Bearer " + auth,
+    authorization: auth,
   },
 });
 
@@ -33,7 +36,18 @@ module.exports = {
 
     if (network == "ipfs_local") {
       console.log("ADDING METADATA TO LOCAL IPFS ========================] \n");
-      const metaAdded = await ipfs_local.add(JSON.stringify(metaData));
+      let metaAdded;
+
+      ipfs_local.add(JSON.stringify(metaData))
+        .then((res) => {
+          console.log("res", res);
+          metaAdded = res;
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
+
+      console.log("metaAdded", metaAdded);
       cid = await metaAdded.cid.toString();
       // console.log(cid)
       console.log("📁  " + "http://localhost:8080/ipfs/" + cid);
@@ -42,7 +56,18 @@ module.exports = {
       console.log(
         "ADDING METADATA TO REMOTE IPFS ========================] \n"
       );
-      const metaAdded = await ipfs_remote.add(JSON.stringify(metaData));
+      let metaAdded;
+      
+      ipfs_remote.add(JSON.stringify(metaData))
+        .then((res) => {
+          console.log("res", res);
+          metaAdded = res;
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
+
+      console.log("metaAdded", metaAdded);
       cid = await metaAdded.cid.toString();
       console.log("📁  " + "https://cloudflare-ipfs.com/ipfs/" + cid);
       return cid;
