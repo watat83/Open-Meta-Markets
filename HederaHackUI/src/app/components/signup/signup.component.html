@@ -78,7 +78,7 @@
             <ng-container matColumnDef="ipfsHash">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Metadata</th>
                 <td mat-cell *matCellDef="let row">
-                    <a target="_blank" href="https://cloudflare-ipfs.com/ipfs/{{row?.ipfsHash}}"
+                    <a target="_blank" href="https://ipfs.io/ipfs/{{row?.ipfsHash}}"
                         matTooltip="{{row?.ipfsHash}}"
                         matTooltipClass="tooltip-metadata">{{row?.ipfsHash.substring(0,10)}}...
                     </a>

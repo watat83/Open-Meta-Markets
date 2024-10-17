@@ -278,7 +278,7 @@ module.exports = {
         // console.log(nft.ipfsHash);
         const hash = nft.ipfsHash;
         let metadata = await axios.get(
-          "https://cloudflare-ipfs.com/ipfs/" + hash
+          "https://ipfs.io/ipfs/" + hash
         );
         // console.log(metadata.data);
         metadata = metadata.data;
@@ -787,7 +787,7 @@ async function getNFTMetadataBySerial(_client, _tokenId, _serial, _network) {
     return _finalMetadata;
   } else if (_network == "ipfs_remote") {
     const _promise = await fetch(
-      "https://cloudflare-ipfs.com/ipfs/" + ipfsHash
+      "https://ipfs.io/ipfs/" + ipfsHash
     );
     _finalMetadata = await _promise.json();
     // console.log('_finalMetadataRemote', _finalMetadata);
