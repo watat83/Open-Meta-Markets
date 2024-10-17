@@ -302,84 +302,85 @@ module.exports = {
     }
   },
   newNFTSerial: async (req, res, next) => {
-    // Structure of the _data
-    const fetchImage = await axios.get(
-      "https://randomuser.me/api/?gender=" + (req.body?.gender).toLowerCase(),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    let finalImage = fetchImage.data;
-    // let finalImage = { image_url: "https://100k-faces.glitch.me/random-image" };
-    // console.log(finalImage);
-    finalImage = finalImage.results[0].picture.large;
-    let _metadata = {
-      name: req.body?.name,
-      // description: req.body?.description || null,
-      image: finalImage,
-      properties: {
-        dob: req.body?.dob,
-        email: req.body?.email,
-        gender: req.body?.gender || null,
-      },
-    };
-    // console.log(_metadata)
-    let _data = {
-      // serial: req.body.serial || null,
-      // ipfsHash: req.body.ipfsHash || null,
-      // tokenId: req.body.tokenId,
-      ownerId: req.body.ownerId,
-    };
-    const _network = req.body.network || "ipfs_local";
-    // console.log('_data', _data);
-
-    // Fetch NFT Collection
-    const _nftCollection = await NFTCollection.find({})
-      .sort({
-        name: 1,
-      })
-      .populate("ownerId");
-    // console.log("_nftCollection", _nftCollection[0]);
-
-    // Set Testnet Client
-    let _client;
-    let _clientPvKey;
-    let account = await Account.find({
-      _id: _nftCollection[0].ownerId._id,
-    }).sort({
-      name: 1,
-    });
-    account = account[0];
-    console.log("account", account);
-    if (account) {
-      _client = Client.forTestnet().setOperator(
-        AccountId.fromString(account?.accountId),
-        PrivateKey.fromString(account?.pvKey)
-      );
-      _clientPvKey = PrivateKey.fromString(account?.pvKey);
-    } else {
-      _client = Client.forTestnet().setOperator(operatorId, operatorKey);
-      _clientPvKey = operatorKey;
-    }
-
-    let _result;
-    const _CID = await createCID(_data, _network);
-    // console.log(_CID);
-
-    _result = await tokenMinterFnc(
-      _client,
-      _nftCollection[0]?.tokenId,
-      _metadata,
-      _network
-    );
-    // console.log(_result?.serial, _result?.hash)
-
-    _data.ipfsHash = _result?.hash;
-    _data.serial = _result?.serial;
-    _data.tokenId = _nftCollection[0]?.tokenId;
     try {
+      // Structure of the _data
+      const fetchImage = await axios.get(
+        "https://randomuser.me/api/?gender=" + (req.body?.gender).toLowerCase(),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      let finalImage = fetchImage.data;
+      // let finalImage = { image_url: "https://100k-faces.glitch.me/random-image" };
+      // console.log(finalImage);
+      finalImage = finalImage.results[0].picture.large;
+      let _metadata = {
+        name: req.body?.name,
+        // description: req.body?.description || null,
+        image: finalImage,
+        properties: {
+          dob: req.body?.dob,
+          email: req.body?.email,
+          gender: req.body?.gender || null,
+        },
+      };
+      // console.log(_metadata)
+      let _data = {
+        // serial: req.body.serial || null,
+        // ipfsHash: req.body.ipfsHash || null,
+        // tokenId: req.body.tokenId,
+        ownerId: req.body.ownerId,
+      };
+      const _network = req.body.network || "ipfs_local";
+      // console.log('_data', _data);
+
+      // Fetch NFT Collection
+      const _nftCollection = await NFTCollection.find({})
+        .sort({
+          name: 1,
+        })
+        .populate("ownerId");
+      // console.log("_nftCollection", _nftCollection[0]);
+
+      // Set Testnet Client
+      let _client;
+      let _clientPvKey;
+      let account = await Account.find({
+        _id: _nftCollection[0].ownerId._id,
+      }).sort({
+        name: 1,
+      });
+      account = account[0];
+      console.log("account", account);
+      if (account) {
+        _client = Client.forTestnet().setOperator(
+          AccountId.fromString(account?.accountId),
+          PrivateKey.fromString(account?.pvKey)
+        );
+        _clientPvKey = PrivateKey.fromString(account?.pvKey);
+      } else {
+        _client = Client.forTestnet().setOperator(operatorId, operatorKey);
+        _clientPvKey = operatorKey;
+      }
+
+      let _result;
+      const _CID = await createCID(_data, _network);
+      // console.log(_CID);
+
+      _result = await tokenMinterFnc(
+        _client,
+        _nftCollection[0]?.tokenId,
+        _metadata,
+        _network
+      );
+      // console.log(_result?.serial, _result?.hash)
+
+      _data.ipfsHash = _result?.hash;
+      _data.serial = _result?.serial;
+      _data.tokenId = _nftCollection[0]?.tokenId;
+
       const nftSerial = await new NFTSerial(_data);
       // console.log(nftSerial)
       await nftSerial.save();

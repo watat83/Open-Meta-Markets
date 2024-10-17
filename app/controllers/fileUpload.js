@@ -36,18 +36,9 @@ module.exports = {
 
     if (network == "ipfs_local") {
       console.log("ADDING METADATA TO LOCAL IPFS ========================] \n");
-      let metaAdded;
 
-      ipfs_local.add(JSON.stringify(metaData))
-        .then((res) => {
-          console.log("res", res);
-          metaAdded = res;
-        })
-        .catch((err) => {
-          console.log("err", err);
-        });
+      const metaAdded = ipfs_local.add(JSON.stringify(metaData));
 
-      console.log("metaAdded", metaAdded);
       cid = await metaAdded.cid.toString();
       // console.log(cid)
       console.log("📁  " + "http://localhost:8080/ipfs/" + cid);
@@ -56,18 +47,8 @@ module.exports = {
       console.log(
         "ADDING METADATA TO REMOTE IPFS ========================] \n"
       );
-      let metaAdded;
-      
-      ipfs_remote.add(JSON.stringify(metaData))
-        .then((res) => {
-          console.log("res", res);
-          metaAdded = res;
-        })
-        .catch((err) => {
-          console.log("err", err);
-        });
+      const metaAdded = await ipfs_remote.add(JSON.stringify(metaData));
 
-      console.log("metaAdded", metaAdded);
       cid = await metaAdded.cid.toString();
       console.log("📁  " + "https://cloudflare-ipfs.com/ipfs/" + cid);
       return cid;
