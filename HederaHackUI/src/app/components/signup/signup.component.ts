@@ -140,7 +140,7 @@ export class SignupComponent implements OnInit, AfterViewInit {
     for (let i = 0; i < this.NFTs.length; i++) {
       const element = this.NFTs[i];
       let metadata = await fetch(
-        "https://cloudflare-ipfs.com/ipfs/" + this.NFTs[i].ipfsHash
+        "https://ipfs.io/ipfs/" + this.NFTs[i].ipfsHash
       );
       console.log("metadata", await metadata.json());
     }
