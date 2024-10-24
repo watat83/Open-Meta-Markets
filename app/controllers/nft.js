@@ -374,7 +374,7 @@ module.exports = {
         name: 1,
       });
       account = account[0];
-      console.log("account", account);
+
       if (account) {
         _client = Client.forTestnet().setOperator(
           AccountId.fromString(account?.accountId),

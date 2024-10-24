@@ -338,14 +338,13 @@ async function redeploySmartContract(
   _gas = 3000000,
   _chunks = 10
 ) {
-  console.log('redeploySmartContract');
   await JobSmartContract.deleteMany({});
-  console.log('JobSmartContract deleteMany done');
+
   const _bytecodeFileId = await createContractBytecodeFileId(
     _client,
     _clientPvKey
   );
-  console.log('_bytecodeFileId', _bytecodeFileId);
+
   await uploadBytecode(
     _client,
     _clientPvKey,
@@ -353,25 +352,20 @@ async function redeploySmartContract(
     _bytecode,
     _chunks
   );
-  console.log('uploadBytecode done');
+
   const _contractId = await instantiateContract(_client, _bytecodeFileId, _gas);
-  console.log('_contractId', _contractId);
   const solidityAddress = await contractId.toSolidityAddress();
-  console.log('solidityAddress', solidityAddress);
 }
 
 async function createContractBytecodeFileId(_client, _clientPvKey) {
-  console.log("createContractBytecodeFileId");
   const fileCreateTx = await new FileCreateTransaction()
     .setKeys([_clientPvKey])
     .freezeWith(_client);
-  console.log("fileCreateTx", fileCreateTx);
+
   const fileCreateSign = await fileCreateTx.sign(_clientPvKey);
-  console.log("fileCreateSign", fileCreateSign);
   const fileCreateSubmit = await fileCreateSign.execute(_client);
-  console.log("fileCreateSubmit", fileCreateSubmit);
   const fileCreateRx = await fileCreateSubmit.getReceipt(_client);
-  console.log("fileCreateRx", fileCreateRx);
+
   bytecodeFileId = fileCreateRx.fileId;
   console.log(`\nGENERATING CONTRACT BYTECODE ID =============== \n`);
   console.log(`- The smart contract bytecode file ID is ${bytecodeFileId} \n`);
