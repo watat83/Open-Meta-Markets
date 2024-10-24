@@ -152,7 +152,6 @@ module.exports = {
     }
   },
   getAllJobPosts: async (req, res, next) => {
-    
     try {
       var jobPosts = [];
       let jobSmartContract = await JobSmartContract.find({})
@@ -183,7 +182,7 @@ module.exports = {
           PrivateKey.fromStringECDSA(account.pvKey)
         );
         
-        const queryGas = 100000;
+        const queryGas = 150000;
         const accountBalance = await getAccountBalance(account.accountId);
 
         if (accountBalance >= queryGas) {
@@ -193,6 +192,7 @@ module.exports = {
             account.accountId,
             jobSmartContract.contractId,
             account.solidityAddress,
+            queryGas
           );
 
           if (jobs.length > 0) {
@@ -548,12 +548,12 @@ async function getAllJobPostsByAccount(
 }
 
 async function getAccountBalance(_accountId) {
-  const query = new AccountBalanceQuery()
+  const query = await new AccountBalanceQuery()
     .setAccountId(_accountId);
 
   const accountBalance = await query.execute(client);
 
-  return accountBalance;
+  return accountBalance.hbars.toTinybars().toString(10);
 }
 
 async function main() {
