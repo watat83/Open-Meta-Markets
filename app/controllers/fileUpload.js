@@ -50,7 +50,7 @@ module.exports = {
       const metaAdded = await ipfs_remote.add(JSON.stringify(metaData));
 
       cid = await metaAdded.cid.toString();
-      console.log("📁  " + "https://cloudflare-ipfs.com/ipfs/" + cid);
+      console.log("📁  " + "https://ipfs.io/ipfs/" + cid);
       return cid;
     }
   },

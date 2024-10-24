@@ -63,22 +63,41 @@ module.exports = {
     }
   },
   newJobSmartContract: async (req, res, next) => {
-    await redeploySmartContract(client, operatorKey, bytecode, 3000000, 10);
     const { title, description, ownerId } = req.body;
 
-    const jobSmartContract = new JobSmartContract({
-      title: title || req.body.title,
-      description: description || req.body.description,
-      ownerId: ownerId || req.body.ownerId,
-      contractId: contractId || req.body.contractId,
-      solidityAddress: contractId.toSolidityAddress(),
-    });
-
     try {
+      const account = await Account.findById(accountId);
+
+      if (!account) {
+        return res.status(404).json({ "message": "Account not found" });
+      }
+
+      const accountPrivateKey = PrivateKey.fromStringECDSA(account.pvKey);
+
+      const accountClient = Client.forTestnet().setOperator(
+        account.accountId,
+        accountPrivateKey
+      );
+
+      if (!accountClient) {
+        return res.status(500).json({ "message": "Client.forTestnet().setOperator failed", error: accountClient });
+      }
+
+      await redeploySmartContract(accountClient, accountPrivateKey, bytecode, 3000000, 10);
+
+      const jobSmartContract = new JobSmartContract({
+        title: title || req.body.title,
+        description: description || req.body.description,
+        ownerId: ownerId || req.body.ownerId,
+        contractId: contractId || req.body.contractId,
+        solidityAddress: contractId.toSolidityAddress(),
+      });
+
       const newJobSmartContract = await jobSmartContract.save();
-      res.status(200).json(newJobSmartContract);
+
+      return res.status(200).json(newJobSmartContract);
     } catch (error) {
-      res.status(500).json(error);
+      return res.status(500).json(error);
     }
   },
   newJobPostByAccount: async (req, res, next) => {
@@ -132,19 +151,31 @@ module.exports = {
     }
   },
   getAllJobPosts: async (req, res, next) => {
-    var jobPosts = [];
-    let jobSmartContract = await JobSmartContract.find({})
-      .sort({
-        title: 1,
-      })
-      .populate("ownerId", "_id name accountId");
-    jobSmartContract = jobSmartContract[0];
-
-    let accounts = await Account.find().sort({
-      name: 1,
-    });
-
+    
     try {
+      var jobPosts = [];
+      let jobSmartContract = await JobSmartContract.find({})
+        .sort({
+          title: 1,
+        })
+        .populate("ownerId", "_id name accountId");
+      
+      console.log("jobSmartContract", jobSmartContract);
+      if (!jobSmartContract) {
+        return res.status(404).json({ message: "No Job Smart Contract found." });
+      }
+
+      jobSmartContract = jobSmartContract[0];
+      
+      let accounts = await Account.find().sort({
+        name: 1,
+      });
+
+      console.log("accounts", accounts);
+      if (!accounts) {
+        return res.status(404).json({ message: "No accounts found." });
+      }
+
       for (let i = 0; i < accounts.length; i++) {
         let account = accounts[i];
 
@@ -303,12 +334,14 @@ async function redeploySmartContract(
   _gas = 3000000,
   _chunks = 10
 ) {
+  console.log('redeploySmartContract');
   await JobSmartContract.deleteMany({});
+  console.log('JobSmartContract deleteMany done');
   const _bytecodeFileId = await createContractBytecodeFileId(
     _client,
     _clientPvKey
   );
-  // console.log('_bytecodeFileId', _bytecodeFileId);
+  console.log('_bytecodeFileId', _bytecodeFileId);
   await uploadBytecode(
     _client,
     _clientPvKey,
@@ -316,18 +349,25 @@ async function redeploySmartContract(
     _bytecode,
     _chunks
   );
+  console.log('uploadBytecode done');
   const _contractId = await instantiateContract(_client, _bytecodeFileId, _gas);
-  // console.log('_contractId', _contractId);
+  console.log('_contractId', _contractId);
   const solidityAddress = await contractId.toSolidityAddress();
+  console.log('solidityAddress', solidityAddress);
 }
 
 async function createContractBytecodeFileId(_client, _clientPvKey) {
+  console.log("createContractBytecodeFileId");
   const fileCreateTx = await new FileCreateTransaction()
     .setKeys([_clientPvKey])
     .freezeWith(_client);
+  console.log("fileCreateTx", fileCreateTx);
   const fileCreateSign = await fileCreateTx.sign(_clientPvKey);
+  console.log("fileCreateSign", fileCreateSign);
   const fileCreateSubmit = await fileCreateSign.execute(_client);
+  console.log("fileCreateSubmit", fileCreateSubmit);
   const fileCreateRx = await fileCreateSubmit.getReceipt(_client);
+  console.log("fileCreateRx", fileCreateRx);
   bytecodeFileId = fileCreateRx.fileId;
   console.log(`\nGENERATING CONTRACT BYTECODE ID =============== \n`);
   console.log(`- The smart contract bytecode file ID is ${bytecodeFileId} \n`);
