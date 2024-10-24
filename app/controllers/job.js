@@ -14,6 +14,7 @@ const {
   ContractCreateTransaction,
   ContractFunctionParameters,
   ContractExecuteTransaction,
+  AccountBalanceQuery,
 } = require("@hashgraph/sdk");
 const fs = require("fs");
 
@@ -66,7 +67,7 @@ module.exports = {
     const { title, description, ownerId } = req.body;
 
     try {
-      const account = await Account.findById(accountId);
+      const account = await Account.findById(ownerId);
 
       if (!account) {
         return res.status(404).json({ "message": "Account not found" });
@@ -112,7 +113,7 @@ module.exports = {
       if (account) {
         _client = Client.forTestnet().setOperator(
           account.accountId,
-          account.pvKey
+          PrivateKey.fromStringECDSA(account.pvKey)
         );
       } else {
         _client = Client.forTestnet().setOperator(operatorId, operatorKey);
@@ -159,9 +160,8 @@ module.exports = {
           title: 1,
         })
         .populate("ownerId", "_id name accountId");
-      
-      console.log("jobSmartContract", jobSmartContract);
-      if (!jobSmartContract) {
+
+      if (!jobSmartContract?.length) {
         return res.status(404).json({ message: "No Job Smart Contract found." });
       }
 
@@ -171,8 +171,7 @@ module.exports = {
         name: 1,
       });
 
-      console.log("accounts", accounts);
-      if (!accounts) {
+      if (!accounts || !accounts?.length) {
         return res.status(404).json({ message: "No accounts found." });
       }
 
@@ -181,38 +180,43 @@ module.exports = {
 
         let _client = await Client.forTestnet().setOperator(
           account.accountId,
-          account.pvKey
+          PrivateKey.fromStringECDSA(account.pvKey)
         );
+        
+        const queryGas = 100000;
+        const accountBalance = await getAccountBalance(account.accountId);
 
-        const jobs = await getAllJobPostsByAccount(
-          _client,
-          "getAllJobsByAccount",
-          account.accountId,
-          jobSmartContract.contractId,
-          account.solidityAddress,
-        );
+        if (accountBalance >= queryGas) {
+          const jobs = await getAllJobPostsByAccount(
+            _client,
+            "getAllJobsByAccount",
+            account.accountId,
+            jobSmartContract.contractId,
+            account.solidityAddress,
+          );
 
-        if (jobs.length > 0) {
-          for (let j = 0; j < jobs.length; j++) {
-            const element = jobs[j];
+          if (jobs.length > 0) {
+            for (let j = 0; j < jobs.length; j++) {
+              const element = jobs[j];
 
-            jobPosts.push({
-              jobId: element.jobId,
-              title: element.jobTitle,
-              paymentMethod: element.paymentMethod,
-              accountId: element.accountId,
-              account: element.account,
-            });
+              jobPosts.push({
+                jobId: element.jobId,
+                title: element.jobTitle,
+                paymentMethod: element.paymentMethod,
+                accountId: element.accountId,
+                account: element.account,
+              });
+            }
           }
         }
       }
 
       jobPosts = await UtilsArray.sortBy(jobPosts, "jobId", "asc");
 
-      res.status(200).json(jobPosts);
+      return res.status(200).json(jobPosts);
     } catch (error) {
       console.log(error);
-      res.status(500).json(error);
+      return res.status(500).json(error);
     }
   },
   getAllJobPostsByAccount: async (req, res, next) => {
@@ -519,12 +523,14 @@ async function getAllJobPostsByAccount(
   _functionName,
   _accountId,
   _contractId,
-  _accountEvmAddress
+  _accountEvmAddress,
+  _queryGas,
 ) {
   address = _accountEvmAddress || operatorEVMAddress;
+
   const contractQuery = await new ContractCallQuery()
     //Set the gas for the query
-    .setGas(100000)
+    .setGas(_queryGas)
     //Set the contract ID to return the request for
     .setContractId(_contractId)
     //Set the contract function to call
@@ -545,6 +551,15 @@ async function getAllJobPostsByAccount(
 
   // console.log(res[0]);
   return res[0];
+}
+
+async function getAccountBalance(_accountId) {
+  const query = new AccountBalanceQuery()
+    .setAccountId(_accountId);
+
+  const accountBalance = await query.execute(client);
+
+  return accountBalance;
 }
 
 async function main() {
