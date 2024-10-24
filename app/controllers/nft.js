@@ -94,14 +94,32 @@ module.exports = {
         .populate("ownerId", "_id name accountId");
 
       if (!nftCollection.length) {
-        res.status(404).json({ message: "NFT Collection not found" });
+        return res.status(404).json({ message: "No NFT Collection found" });
       }
 
       nftCollection = nftCollection[0];
+
+      const account = await Account.findById(nftCollection.ownerId);
+
+      if (!account) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      const accountPrivateKey = PrivateKey.fromStringECDSA(account.pvKey);
+
+      const accountClient = Client.forTestnet().setOperator(
+        account.accountId,
+        accountPrivateKey
+      );
+
+      if (!accountClient) {
+        return res.status(500).json({ message: "Client.forTestnet().setOperator failed", error: accountClient });
+      }
+
       let _tokenId = nftCollection?.tokenId;
-      const nftInfos = await checkTokenInfo(client, _tokenId);
-      // console.log(nftInfos);
-      finalCollection = {
+      const nftInfos = await checkTokenInfo(accountClient, _tokenId);
+
+      const finalCollection = {
         _id: nftCollection?._id,
         name: nftCollection?.name,
         symbol: nftCollection?.symbol,
@@ -189,34 +207,37 @@ module.exports = {
       req.params.nftCollectionId ||
       req.body.nftCollectionId ||
       req.query.nftCollectionId;
-    const nft = await NFTCollection.findOne({
-      tokenId: nftCollectionId,
-    });
-    const _tokenId = nft.tokenId;
-
-    // const nftInfos = await new TokenInfoQuery()
-    //     .setTokenId(TokenId.fromString(_tokenId))
-    //     .execute(client);
-    // console.log(nftInfos);
-    const nftInfos = await checkTokenInfo(client, _tokenId);
-    const finalCollection = {
-      _id: nft._id,
-      name: nft.name,
-      symbol: nft.symbol,
-      tokenId: _tokenId,
-      memo: nft.memo,
-      totalSupply: nftInfos.totalSupply.low,
-      maxSupply: nftInfos.maxSupply.low,
-      customFee: {
-        numerator: nftInfos.customFees[0]._numerator.low,
-        denominator: nftInfos.customFees[0]._denominator.low,
-      },
-      ownerId: nft.ownerId,
-      accountId: nft.accountId,
-      created_at: nft.created_at,
-    };
 
     try {
+      const nft = await NFTCollection.findOne({
+        tokenId: nftCollectionId,
+      });
+
+      const _tokenId = nft.tokenId;
+
+      // const nftInfos = await new TokenInfoQuery()
+      //     .setTokenId(TokenId.fromString(_tokenId))
+      //     .execute(client);
+      // console.log(nftInfos);
+      const nftInfos = await checkTokenInfo(client, _tokenId);
+
+      const finalCollection = {
+        _id: nft._id,
+        name: nft.name,
+        symbol: nft.symbol,
+        tokenId: _tokenId,
+        memo: nft.memo,
+        totalSupply: nftInfos.totalSupply.low,
+        maxSupply: nftInfos.maxSupply.low,
+        customFee: {
+          numerator: nftInfos.customFees[0]._numerator.low,
+          denominator: nftInfos.customFees[0]._denominator.low,
+        },
+        ownerId: nft.ownerId,
+        accountId: nft.accountId,
+        created_at: nft.created_at,
+      };
+
       res.status(200).json(finalCollection);
     } catch (error) {
       console.log(error);
