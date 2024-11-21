@@ -27,6 +27,7 @@ import { JobSmartContractComponent } from './components/job/smart-contract/job-s
 import { JobPostFormComponent } from './components/job/job-post/job-post-form/job-post-form.component';
 import { JobPostListComponent } from './components/job/job-post/job-post-list/job-post-list.component';
 import { JobPostComponent } from './components/job/job-post/job-post/job-post.component';
+import { AcceptJobModalComponent } from './components/job/job-post/job-post-list/accept-job-modal/accept-job-modal.component';
 
 @NgModule({
   declarations: [
@@ -42,6 +43,7 @@ import { JobPostComponent } from './components/job/job-post/job-post/job-post.co
     JobPostFormComponent,
     JobPostListComponent,
     JobPostComponent,
+    AcceptJobModalComponent,
   ],
   imports: [
     FormsModule,
