@@ -31,6 +31,7 @@ const {
   AccountBalanceQuery,
   AccountUpdateTransaction,
   TokenAssociateTransaction,
+  TokenUpdateNftsTransaction,
 } = require("@hashgraph/sdk");
 const fs = require("fs");
 
@@ -528,6 +529,75 @@ module.exports = {
       res.status(404).json(error);
     }
   },
+  updateNftProfileAfterCompleteJob: async (req, res, next) => {
+    try {
+      const nftSerialId = req.params.nftSerialId || req.body.nftSerialId || req.query.nftSerialId;
+      const updatedMetadata = req.body.updatedMetadata;
+
+      const existentNftSerial = await NFTSerial.findOne({
+        serial: nftSerialId
+      });
+
+      if (!existentNftSerial) {
+        return res.status(404).json({
+          message: `No NFT found with the serial: ${nftSerialId}`
+        });
+      }
+
+      let _client;
+      let account = await Account.find({ _id: existentNftSerial.ownerId }).sort({
+        name: 1,
+      });
+      account = account[0];
+
+      if (account) {
+        _client = Client.forTestnet().setOperator(
+          AccountId.fromString(account?.accountId),
+          PrivateKey.fromString(account?.pvKey)
+        );
+      } else {
+        _client = Client.forTestnet().setOperator(operatorId, operatorKey);
+      }
+
+      const metadata = await getNFTMetadataBySerial(
+        _client,
+        existentNftSerial?.tokenId,
+        existentNftSerial?.serial,
+        "ipfs_remote"
+      );
+
+      console.log("\n\n metadata", metadata);
+
+      await updateNFTProfileMetadata(
+        existentNftSerial?.tokenId,
+        existentNftSerial?.serial,
+        {
+          ...metadata,
+          properties: {
+            ...metadata.properties,
+            updatedMetadata
+          }
+        },
+        _client,
+        existentNftSerial?.ipfsHash,
+      );
+
+      // const nftSerial = {
+      //   serial: existentNftSerial?.serial,
+      //   ipfsHash: existentNftSerial?.ipfsHash,
+      //   tokenId: existentNftSerial?.tokenId,
+      //   ownerId: existentNftSerial?.ownerId,
+      //   metadata,
+      // };
+
+      return res.status(200).json({
+        message: "NFT Serial updated"
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(error);
+    }
+  },
 };
 
 async function resetNFTContractAndCollection() {
@@ -646,6 +716,30 @@ async function createNFTCollectionWithCustomFee(
   return tokenId;
 }
 
+async function updateNFTProfileMetadata(
+  _tokenId,
+  _nftSerial,
+  _updatedMetadata,
+  _client,
+  _metadataKey
+) {
+  const tokenUpdateNftsTx = await new TokenUpdateNftsTransaction()
+    .setTokenId(_tokenId)
+    .setSerialNumbers([_nftSerial])
+    .setMetadata(_updatedMetadata)
+    .freezeWith(_client);
+  
+  const tokenUpdateNftsResponse = await ( 
+    await tokenUpdateNftsTx.sign(_metadataKey)
+  ).execute(_client);
+
+  const tokenUpdateNftsReceipt = await tokenUpdateNftsResponse.getReceipt(_client);
+
+  console.log(
+    `Token metadata update status: ${tokenUpdateNftsReceipt.status.toString()}`,
+  );
+}
+
 async function checkTokenInfo(_client, _tokenId) {
   // RoyaltiesInfo, TotalSupply, and More
   const tokenInfo = await new TokenInfoQuery()
@@ -673,6 +767,7 @@ async function tokenMinterFnc(_client, _tokenId, _data, _network) {
   let mintTxSign = await mintTx.sign(supplyKey);
   let mintTxSubmit = await mintTxSign.execute(_client);
   let mintRx = await mintTxSubmit.getReceipt(_client);
+  console.log("\n\n--mintRx", mintRx);
   return { serial: await mintRx.serials[0].low, hash: _CID };
 }
 
@@ -802,7 +897,6 @@ async function getNFTMetadataBySerial(_client, _tokenId, _serial, _network) {
   let nftSerialMetadata = await new TokenNftInfoQuery()
     .setNftId(new NftId(TokenId.fromString(_tokenId), Number(_serial)))
     .execute(_client);
-  // console.log(nftSerialMetadata)
   let ipfsHash = await nftSerialMetadata[0].metadata;
   // console.log('NFT Metadata:', await ipfsHash.toString());
   ipfsHash = await ipfsHash.toString();

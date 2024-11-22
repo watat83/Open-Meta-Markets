@@ -40,4 +40,8 @@ routerNFTSerial
   // Delete a nft
   .delete([], NFTController.deleteNFTBySerialId);
 
+routerNFTSerial
+  .route("/completeJob/:nftSerialId")
+  .patch([], NFTController.updateNftProfileAfterCompleteJob)
+
 module.exports = { routerNFTCollection, routerNFTSerial };
