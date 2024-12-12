@@ -153,8 +153,10 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
     });
   }
 
-  getNFTProfileSerial(nftProfileTokenId: string): any {
-    const nftProfile = this.nftProfiles.find((profile) => profile.tokenId == nftProfileTokenId);
+  getNFTProfileSerial(nftProfileEmail: string): any {
+    const nftProfile = this.nftProfiles.find(
+      (profile) => profile.metadata?.properties?.email == nftProfileEmail
+    );
     return nftProfile;
   }
 }

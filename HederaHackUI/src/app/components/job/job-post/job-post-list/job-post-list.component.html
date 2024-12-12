@@ -51,10 +51,10 @@
                 <div>
                     <a
                         *ngIf="row?.jobCompleted && (row?.jobCompleted == true || row?.jobCompleted == 'true')"
-                        href="https://hashscan.io/testnet/token/{{row?.jobCompletedBy[3]}}/{{getNFTProfileSerial(row?.jobCompletedBy[3])?.serial}}"
+                        href="https://hashscan.io/testnet/token/{{row?.jobCompletedBy[3]}}/{{getNFTProfileSerial(row?.jobCompletedBy[1])?.serial}}"
                         target="_blank"
                     >
-                        {{ getNFTProfileSerial(row?.jobCompletedBy[3])?.metadata?.name || row?.jobCompletedBy[3] }}
+                        {{ getNFTProfileSerial(row?.jobCompletedBy[1])?.metadata?.name }}
                     </a>
                     <span *ngIf="row?.jobCompleted == false || row?.jobCompleted == 'false'">-</span>
                 </div>
