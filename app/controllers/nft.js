@@ -31,7 +31,6 @@ const {
   AccountBalanceQuery,
   AccountUpdateTransaction,
   TokenAssociateTransaction,
-  TokenUpdateNftsTransaction,
 } = require("@hashgraph/sdk");
 const fs = require("fs");
 
@@ -532,7 +531,8 @@ module.exports = {
   updateNftProfileAfterCompleteJob: async (req, res, next) => {
     try {
       const nftSerialId = req.params.nftSerialId || req.body.nftSerialId || req.query.nftSerialId;
-      const updatedMetadata = req.body.updatedMetadata;
+      const newMetadata = req.body;
+      const _network = req.body.network || "ipfs_remote";
 
       const existentNftSerial = await NFTSerial.findOne({
         serial: nftSerialId
@@ -559,27 +559,23 @@ module.exports = {
         _client = Client.forTestnet().setOperator(operatorId, operatorKey);
       }
 
-      const metadata = await getNFTMetadataBySerial(
+      const existingMetadata = await getNFTMetadataBySerial(
         _client,
         existentNftSerial?.tokenId,
         existentNftSerial?.serial,
         "ipfs_remote"
       );
 
-      console.log("\n\n metadata", metadata);
+      const updatedMetadata = {
+        ...existingMetadata,
+        ...newMetadata,
+      };
 
       await updateNFTProfileMetadata(
         existentNftSerial?.tokenId,
-        existentNftSerial?.serial,
-        {
-          ...metadata,
-          properties: {
-            ...metadata.properties,
-            updatedMetadata
-          }
-        },
         _client,
-        existentNftSerial?.ipfsHash,
+        updatedMetadata,
+        _network,
       );
 
       // const nftSerial = {
@@ -718,25 +714,23 @@ async function createNFTCollectionWithCustomFee(
 
 async function updateNFTProfileMetadata(
   _tokenId,
-  _nftSerial,
-  _updatedMetadata,
   _client,
-  _metadataKey
+  _updatedMetadata,
+  _network,
 ) {
-  const tokenUpdateNftsTx = await new TokenUpdateNftsTransaction()
+  const _CID = await createCID(_updatedMetadata, _network);
+
+  const transaction = await new TokenUpdateTransaction()
     .setTokenId(_tokenId)
-    .setSerialNumbers([_nftSerial])
-    .setMetadata(_updatedMetadata)
+    .setMetadata([await Buffer.from(_CID)])
     .freezeWith(_client);
   
-  const tokenUpdateNftsResponse = await ( 
-    await tokenUpdateNftsTx.sign(_metadataKey)
-  ).execute(_client);
-
-  const tokenUpdateNftsReceipt = await tokenUpdateNftsResponse.getReceipt(_client);
+  const signTx = await transaction.sign(operatorKey);
+  const response = await signTx.execute(_client);
+  const receipt = await response.getReceipt(_client);
 
   console.log(
-    `Token metadata update status: ${tokenUpdateNftsReceipt.status.toString()}`,
+    `Token metadata update status: ${receipt.status}`,
   );
 }
 

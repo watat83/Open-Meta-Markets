@@ -56,7 +56,8 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
     "title",
     "paymentMethod",
     "accountId",
-    "accept"
+    "jobCompletedBy",
+    "accept",
     // 'created_at',
     // "actions"
   ];
@@ -67,6 +68,7 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
   constructor(
     private _accountService: AccountService,
     private _jobService: JobService,
+    private _messageService: MessageService,
     private dialog: MatDialog,
     private _nftService: NftService,
   ) {
@@ -112,7 +114,7 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
     }, 3000);
   }
 
-  openAcceptJobModal(event: Event): void {
+  openAcceptJobModal(event: Event, jobId: string): void {
     event.stopPropagation();
 
     const dialogRef = this.dialog.open(AcceptJobModalComponent, {
@@ -125,10 +127,34 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result?.selectedNftProfile) {
-        console.log('Selected Nft Profile:', result.selectedNftProfile);
-        // TODO: add action after select who completed the job
+        this._jobService.updateJobPostWithCompletedBy({
+          ownerId: result.selectedNftProfile?.ownerId?._id,
+          jobId: jobId,
+          dob: result.selectedNftProfile?.metadata?.properties?.dob,
+          email: result.selectedNftProfile?.metadata?.properties?.email,
+          gender: result.selectedNftProfile?.metadata?.properties?.gender,
+          nftProfileTokenId: result.selectedNftProfile?.tokenId,
+        }).subscribe(
+          async (data: any) => {
+            this._messageService.showNotification(
+              "Job Post updated successfully",
+              "Fantastic!"
+            );
+          },
+          (error: any) => {
+            console.log(error);
+            this._messageService.showNotification(
+              "Something went wrong. Try again later",
+              "Error!"
+            );
+          }
+        );
       }
     });
   }
 
+  getNFTProfileSerial(nftProfileTokenId: string): any {
+    const nftProfile = this.nftProfiles.find((profile) => profile.tokenId == nftProfileTokenId);
+    return nftProfile;
+  }
 }

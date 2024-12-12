@@ -84,7 +84,7 @@ module.exports = {
         return res.status(500).json({ "message": "Client.forTestnet().setOperator failed", error: accountClient });
       }
 
-      await redeploySmartContract(accountClient, accountPrivateKey, bytecode, 3000000, 10);
+      await redeploySmartContract(accountClient, accountPrivateKey, bytecode, 3000000, 20);
 
       const jobSmartContract = new JobSmartContract({
         title: title || req.body.title,
@@ -142,10 +142,66 @@ module.exports = {
         _jobPost.contractId,
         account.accountId,
         _jobPost.title,
-        _jobPost.paymentMethod
+        _jobPost.paymentMethod,
       );
 
       res.status(200).json(_jobPost);
+    } catch (error) {
+      console.log(error);
+      res.status(500).json(error);
+    }
+  },
+  updateJobPostWithCompletedBy: async (req, res, next) => {
+    try {
+      let _client;
+
+      let account = await Account.find({ _id: req.body.ownerId }).sort({
+        name: 1,
+      });
+      account = account[0];
+
+      if (account) {
+        _client = Client.forTestnet().setOperator(
+          account.accountId,
+          PrivateKey.fromStringECDSA(account.pvKey)
+        );
+      } else {
+        _client = Client.forTestnet().setOperator(operatorId, operatorKey);
+      }
+
+      const jobSmartContract = await JobSmartContract.find({})
+        .sort({
+          title: 1,
+        })
+        .populate("ownerId", "_id name accountId");
+
+      if (!jobSmartContract.length) {
+        res.status(404).json({ message: "Job Smart Contract not found" });
+      }
+
+      const _updatedJobData = {
+        contractId: jobSmartContract[0].contractId,
+        jobId: req.body.jobId,
+        jobCompleted: "true",
+        dob: req.body.dob,
+        email: req.body.email,
+        gender: req.body.gender,
+        nftProfileTokenId: req.body.nftProfileTokenId,
+      };
+
+      await updateJobPostWithCompletedBy(
+        _client,
+        _updatedJobData.contractId,
+        account.solidityAddress,
+        _updatedJobData.jobId,
+        _updatedJobData.jobCompleted,
+        _updatedJobData.dob,
+        _updatedJobData.email,
+        _updatedJobData.gender,
+        _updatedJobData.nftProfileTokenId,
+      );
+
+      res.status(200).json(_updatedJobData);
     } catch (error) {
       console.log(error);
       res.status(500).json(error);
@@ -205,11 +261,17 @@ module.exports = {
                 paymentMethod: element.paymentMethod,
                 accountId: element.accountId,
                 account: element.account,
+                jobCompleted: element.jobCompleted,
+                jobCompletedBy: element.jobCompletedBy,
               });
             }
           }
         }
       }
+
+      jobPosts = jobPosts.filter((obj, index, arr) => {
+        return arr.findIndex((item) => JSON.stringify(item) === JSON.stringify(obj)) === index;
+      });
 
       jobPosts = await UtilsArray.sortBy(jobPosts, "jobId", "asc");
 
@@ -336,86 +398,106 @@ async function redeploySmartContract(
   _clientPvKey,
   _bytecode,
   _gas = 3000000,
-  _chunks = 10
+  _chunks = 20
 ) {
-  await JobSmartContract.deleteMany({});
-
-  const _bytecodeFileId = await createContractBytecodeFileId(
-    _client,
-    _clientPvKey
-  );
-
-  await uploadBytecode(
-    _client,
-    _clientPvKey,
-    _bytecodeFileId,
-    _bytecode,
-    _chunks
-  );
-
-  const _contractId = await instantiateContract(_client, _bytecodeFileId, _gas);
-  const solidityAddress = await contractId.toSolidityAddress();
+  try {
+    await JobSmartContract.deleteMany({});
+  
+    const _bytecodeFileId = await createContractBytecodeFileId(
+      _client,
+      _clientPvKey
+    );
+  
+    await uploadBytecode(
+      _client,
+      _clientPvKey,
+      _bytecodeFileId,
+      _bytecode,
+      _chunks
+    );
+  
+    const _contractId = await instantiateContract(_client, _bytecodeFileId, _gas);
+    const solidityAddress = await contractId.toSolidityAddress();
+  } catch (error) {
+    console.log("redeploySmartContract error", error);
+    return error;
+  }
 }
 
 async function createContractBytecodeFileId(_client, _clientPvKey) {
-  const fileCreateTx = await new FileCreateTransaction()
-    .setKeys([_clientPvKey])
-    .freezeWith(_client);
-
-  const fileCreateSign = await fileCreateTx.sign(_clientPvKey);
-  const fileCreateSubmit = await fileCreateSign.execute(_client);
-  const fileCreateRx = await fileCreateSubmit.getReceipt(_client);
-
-  bytecodeFileId = fileCreateRx.fileId;
-  console.log(`\nGENERATING CONTRACT BYTECODE ID =============== \n`);
-  console.log(`- The smart contract bytecode file ID is ${bytecodeFileId} \n`);
-  console.log(
-    "👉 " + " https://hashscan.io/testnet/contract/" + bytecodeFileId + "\n"
-  );
-  return bytecodeFileId;
+  try {
+    const fileCreateTx = await new FileCreateTransaction()
+      .setKeys([_clientPvKey])
+      .freezeWith(_client);
+  
+    const fileCreateSign = await fileCreateTx.sign(_clientPvKey);
+    const fileCreateSubmit = await fileCreateSign.execute(_client);
+    const fileCreateRx = await fileCreateSubmit.getReceipt(_client);
+  
+    bytecodeFileId = fileCreateRx.fileId;
+    console.log(`\nGENERATING CONTRACT BYTECODE ID =============== \n`);
+    console.log(`- The smart contract bytecode file ID is ${bytecodeFileId} \n`);
+    console.log(
+      "👉 " + " https://hashscan.io/testnet/contract/" + bytecodeFileId + "\n"
+    );
+    return bytecodeFileId;
+  } catch (error) {
+    console.log("createContractBytecodeFileId error", error);
+    return error;
+  }
 }
 async function uploadBytecode(
   _client,
   _clientPvKey,
   _bytecodeFileId,
   _bytecode,
-  _chunks = 10
+  _chunks = 20
 ) {
-  const fileAppendTx = await new FileAppendTransaction()
-    .setFileId(_bytecodeFileId)
-    .setContents(_bytecode)
-    .setMaxChunks(_chunks)
-    .freezeWith(_client);
-  const fileAppendSign = await fileAppendTx.sign(_clientPvKey);
-  const fileAppendSubmit = await fileAppendSign.execute(_client);
-  const fileAppendRx = await fileAppendSubmit.getReceipt(_client);
-  console.log(`\nUPLOADING CONTRACT BYTECODE TO NETWORK ======= \n`);
-  console.log(`- Content added: ${fileAppendRx.status} \n`);
+  try {
+    const fileAppendTx = await new FileAppendTransaction()
+      .setFileId(_bytecodeFileId)
+      .setContents(_bytecode)
+      .setMaxChunks(_chunks)
+      .freezeWith(_client);
+    const fileAppendSign = await fileAppendTx.sign(_clientPvKey);
+    const fileAppendSubmit = await fileAppendSign.execute(_client);
+    const fileAppendRx = await fileAppendSubmit.getReceipt(_client);
+    console.log(`\nUPLOADING CONTRACT BYTECODE TO NETWORK ======= \n`);
+    console.log(`- Content added: ${fileAppendRx.status} \n`);
+  } catch (error) {
+    console.log("uploadBytecode error", error);
+    return error;
+  }
 }
 
 async function instantiateContract(_client, _bytecodeFileId, _gas = 3000000) {
-  const contractInstantiateTx = new ContractCreateTransaction()
-    .setBytecodeFileId(_bytecodeFileId)
-    .setGas(_gas);
-  // .setConstructorParameters(
-  //   new ContractFunctionParameters()
-  // );
-  const contractInstantiateSubmit = await contractInstantiateTx.execute(
-    _client
-  );
-  const contractInstantiateRx = await contractInstantiateSubmit.getReceipt(
-    _client
-  );
-  contractId = contractInstantiateRx.contractId;
-  const contractAddress = contractId.toSolidityAddress();
-  console.log(`\nINSTANTIATE THE CONTRACT ON HEDERA ======= \n`);
-  console.log(`- The smart contract ID is: ${contractId}`);
-  console.log(
-    `- The smart contract ID in Solidity format is: ${contractAddress} \n`
-  );
-  console.log("👉 " + " https://hashscan.io/testnet/contract/" + contractId);
-
-  return contractId;
+  try {
+    const contractInstantiateTx = new ContractCreateTransaction()
+      .setBytecodeFileId(_bytecodeFileId)
+      .setGas(_gas);
+    // .setConstructorParameters(
+    //   new ContractFunctionParameters()
+    // );
+    const contractInstantiateSubmit = await contractInstantiateTx.execute(
+      _client
+    );
+    const contractInstantiateRx = await contractInstantiateSubmit.getReceipt(
+      _client
+    );
+    contractId = contractInstantiateRx.contractId;
+    const contractAddress = contractId.toSolidityAddress();
+    console.log(`\nINSTANTIATE THE CONTRACT ON HEDERA ======= \n`);
+    console.log(`- The smart contract ID is: ${contractId}`);
+    console.log(
+      `- The smart contract ID in Solidity format is: ${contractAddress} \n`
+    );
+    console.log("👉 " + " https://hashscan.io/testnet/contract/" + contractId);
+  
+    return contractId;
+  } catch (error) {
+    console.log("instantiateContract error", error);
+    return error;
+  }
 }
 
 async function newJobPostByAccount(
@@ -435,13 +517,53 @@ async function newJobPostByAccount(
         .addString(_title)
         .addString(_paymentMethod)
         .addString(_accountId)
-      // .addAddress(_accountId.toSolidityAddress())
+        .addString("false")
+        .addString("")
+        .addString("")
+        .addString("")
+        .addString("")
     );
   const contractExecSubmit = await contractExecTx.execute(_client);
   const record = await contractExecSubmit.getRecord(_client);
   const contractExecRx = await contractExecSubmit.getReceipt(_client);
   console.log(`\nCREATING A NEW JOB POST ======= \n`);
   console.log(`- New Job Post Created: ${contractExecRx.status.toString()}`);
+  console.log(`- Transaction Record: ${record.transactionId.toString()}`);
+}
+
+async function updateJobPostWithCompletedBy(
+  _client,
+  _contractId,
+  _account,
+  _jobId,
+  _jobCompleted,
+  _dob,
+  _email,
+  _gender,
+  _nftProfileTokenId,
+  _gas = 3000000
+) {
+  const contractExecTx = await new ContractExecuteTransaction()
+    .setContractId(_contractId)
+    .setGas(_gas)
+    .setFunction(
+      "updateJobWithCompletedBy",
+      new ContractFunctionParameters()
+        .addAddress(_account)
+        .addUint256(_jobId)
+        .addString(_jobCompleted)
+        .addString(_dob)
+        .addString(_email)
+        .addString(_gender)
+        .addString(_nftProfileTokenId)
+    );
+
+  const contractExecSubmit = await contractExecTx.execute(_client);
+  const record = await contractExecSubmit.getRecord(_client);
+  const contractExecRx = await contractExecSubmit.getReceipt(_client);
+
+  console.log(`\nUPDATING JOB POST WITH COMPLETED BY ======= \n`);
+  console.log(`- Job Post Updated: ${contractExecRx.status.toString()}`);
   console.log(`- Transaction Record: ${record.transactionId.toString()}`);
 }
 
