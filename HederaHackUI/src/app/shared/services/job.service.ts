@@ -77,4 +77,12 @@ export class JobService {
       this.jsonHeader
     );
   }
+
+  updateJobPostWithCompletedBy(data: any): any {
+    return this._httpClient.put(
+      environment.apiBaseUrl + '/jobs/',
+      data,
+      this.jsonHeader
+    );
+  }
 }

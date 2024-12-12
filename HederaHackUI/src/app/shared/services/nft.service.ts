@@ -76,4 +76,11 @@ export class NftService {
       this.jsonHeader
     );
   }
+
+  updateNFTProfileAfterCompleteJob(serial: string, data: any): any {
+    return this._httpClient.patch(
+      environment.apiBaseUrl + "/nftSerials/completeJob/" + serial,
+      data
+    );
+  }
 }

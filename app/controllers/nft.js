@@ -299,7 +299,13 @@ module.exports = {
         // console.log(nft.ipfsHash);
         const hash = nft.ipfsHash;
         let metadata = await axios.get(
-          "https://ipfs.io/ipfs/" + hash
+          "https://ipfs.io/ipfs/" + hash,
+          {
+            headers: {
+              'Accept': 'application/json, text/plain, */*',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            }
+          }
         );
         // console.log(metadata.data);
         metadata = metadata.data;
@@ -522,6 +528,72 @@ module.exports = {
       res.status(404).json(error);
     }
   },
+  updateNftProfileAfterCompleteJob: async (req, res, next) => {
+    try {
+      const nftSerialId = req.params.nftSerialId || req.body.nftSerialId || req.query.nftSerialId;
+      const newMetadata = req.body;
+      const _network = req.body.network || "ipfs_remote";
+
+      const existentNftSerial = await NFTSerial.findOne({
+        serial: nftSerialId
+      });
+
+      if (!existentNftSerial) {
+        return res.status(404).json({
+          message: `No NFT found with the serial: ${nftSerialId}`
+        });
+      }
+
+      let _client;
+      let account = await Account.find({ _id: existentNftSerial.ownerId }).sort({
+        name: 1,
+      });
+      account = account[0];
+
+      if (account) {
+        _client = Client.forTestnet().setOperator(
+          AccountId.fromString(account?.accountId),
+          PrivateKey.fromString(account?.pvKey)
+        );
+      } else {
+        _client = Client.forTestnet().setOperator(operatorId, operatorKey);
+      }
+
+      const existingMetadata = await getNFTMetadataBySerial(
+        _client,
+        existentNftSerial?.tokenId,
+        existentNftSerial?.serial,
+        "ipfs_remote"
+      );
+
+      const updatedMetadata = {
+        ...existingMetadata,
+        ...newMetadata,
+      };
+
+      await updateNFTProfileMetadata(
+        existentNftSerial?.tokenId,
+        _client,
+        updatedMetadata,
+        _network,
+      );
+
+      // const nftSerial = {
+      //   serial: existentNftSerial?.serial,
+      //   ipfsHash: existentNftSerial?.ipfsHash,
+      //   tokenId: existentNftSerial?.tokenId,
+      //   ownerId: existentNftSerial?.ownerId,
+      //   metadata,
+      // };
+
+      return res.status(200).json({
+        message: "NFT Serial updated"
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json(error);
+    }
+  },
 };
 
 async function resetNFTContractAndCollection() {
@@ -640,6 +712,28 @@ async function createNFTCollectionWithCustomFee(
   return tokenId;
 }
 
+async function updateNFTProfileMetadata(
+  _tokenId,
+  _client,
+  _updatedMetadata,
+  _network,
+) {
+  const _CID = await createCID(_updatedMetadata, _network);
+
+  const transaction = await new TokenUpdateTransaction()
+    .setTokenId(_tokenId)
+    .setMetadata([await Buffer.from(_CID)])
+    .freezeWith(_client);
+  
+  const signTx = await transaction.sign(operatorKey);
+  const response = await signTx.execute(_client);
+  const receipt = await response.getReceipt(_client);
+
+  console.log(
+    `Token metadata update status: ${receipt.status}`,
+  );
+}
+
 async function checkTokenInfo(_client, _tokenId) {
   // RoyaltiesInfo, TotalSupply, and More
   const tokenInfo = await new TokenInfoQuery()
@@ -667,6 +761,7 @@ async function tokenMinterFnc(_client, _tokenId, _data, _network) {
   let mintTxSign = await mintTx.sign(supplyKey);
   let mintTxSubmit = await mintTxSign.execute(_client);
   let mintRx = await mintTxSubmit.getReceipt(_client);
+  console.log("\n\n--mintRx", mintRx);
   return { serial: await mintRx.serials[0].low, hash: _CID };
 }
 
@@ -796,7 +891,6 @@ async function getNFTMetadataBySerial(_client, _tokenId, _serial, _network) {
   let nftSerialMetadata = await new TokenNftInfoQuery()
     .setNftId(new NftId(TokenId.fromString(_tokenId), Number(_serial)))
     .execute(_client);
-  // console.log(nftSerialMetadata)
   let ipfsHash = await nftSerialMetadata[0].metadata;
   // console.log('NFT Metadata:', await ipfsHash.toString());
   ipfsHash = await ipfsHash.toString();

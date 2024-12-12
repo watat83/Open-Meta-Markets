@@ -32,16 +32,51 @@
 
         <!-- Payment Method Column -->
         <ng-container matColumnDef="paymentMethod">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Payment Method</th>
-            <td mat-cell *matCellDef="let row">{{row?.paymentMethod}}</td>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="wide-column">Payment Method</th>
+            <td mat-cell *matCellDef="let row" class="center-text">{{row?.paymentMethod}}</td>
         </ng-container>
 
         <!-- Author Column -->
         <ng-container matColumnDef="accountId">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Author</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="wide-column">Author</th>
             <td mat-cell *matCellDef="let row"><a target="_blank"
                     href="https://hashscan.io/testnet/account/{{row?.accountId}}">
                     {{row?.accountId}}</a></td>
+        </ng-container>
+
+        <!-- Job Completed By Column -->
+        <ng-container matColumnDef="jobCompletedBy">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="wide-column center-text">Completed By</th>
+            <td mat-cell *matCellDef="let row" class="wide-column center-text">
+                <div>
+                    <a
+                        *ngIf="row?.jobCompleted && (row?.jobCompleted == true || row?.jobCompleted == 'true')"
+                        href="https://hashscan.io/testnet/token/{{row?.jobCompletedBy[3]}}/{{getNFTProfileSerial(row?.jobCompletedBy[3])?.serial}}"
+                        target="_blank"
+                    >
+                        {{ getNFTProfileSerial(row?.jobCompletedBy[3])?.metadata?.name || row?.jobCompletedBy[3] }}
+                    </a>
+                    <span *ngIf="row?.jobCompleted == false || row?.jobCompleted == 'false'">-</span>
+                </div>
+            </td>
+        </ng-container>
+
+        <!-- Accept Job Column -->
+        <ng-container matColumnDef="accept">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header class="wide-column"></th>
+            <td mat-cell *matCellDef="let row" class="wide-column center-text">
+                <div>
+                    <mat-icon *ngIf="row?.jobCompleted && (row?.jobCompleted == true || row?.jobCompleted == 'true')">check</mat-icon>
+                    <button
+                        *ngIf="row?.jobCompleted == false || row?.jobCompleted == 'false'"
+                        mat-flat-button
+                        color="primary"
+                        (click)="openAcceptJobModal($event, row?.jobId)"
+                    >
+                        Accept
+                    </button>
+                </div>
+            </td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>

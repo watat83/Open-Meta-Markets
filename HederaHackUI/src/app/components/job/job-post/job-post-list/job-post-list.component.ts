@@ -27,6 +27,12 @@ import { MessageService } from "src/app/shared/services/message.service";
 import { IAccount } from "../../../account/account.component";
 import { JobService } from "src/app/shared/services/job.service";
 
+import { MatDialog } from '@angular/material/dialog';
+import { AcceptJobModalComponent } from './accept-job-modal/accept-job-modal.component';
+
+import { INFT } from 'src/app/components/signup/signup.component';
+import { NftService } from 'src/app/shared/services/nft.service';
+
 @Component({
   selector: 'app-job-post-list',
   templateUrl: './job-post-list.component.html',
@@ -38,6 +44,7 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
   isLoadingResults = true;
   owners: IAccount[] = [];
   jobPosts: any[] = [];
+  nftProfiles: INFT[] = [];
 
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
@@ -49,6 +56,8 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
     "title",
     "paymentMethod",
     "accountId",
+    "jobCompletedBy",
+    "accept",
     // 'created_at',
     // "actions"
   ];
@@ -59,14 +68,18 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
   constructor(
     private _accountService: AccountService,
     private _jobService: JobService,
-
+    private _messageService: MessageService,
+    private dialog: MatDialog,
+    private _nftService: NftService,
   ) {
     this.isLoadingResults = true;
     this.refreshTable();
   }
 
-  ngOnInit(): void {
+  async ngOnInit() {
+    this.nftProfiles = await this._nftService.getAllNFTs().toPromise();
   }
+
   ngAfterViewInit(): void { }
 
   resetPaging(): void {
@@ -101,4 +114,47 @@ export class JobPostListComponent implements OnInit, AfterViewInit {
     }, 3000);
   }
 
+  openAcceptJobModal(event: Event, jobId: string): void {
+    event.stopPropagation();
+
+    const dialogRef = this.dialog.open(AcceptJobModalComponent, {
+      width: '400px',
+      data: {
+        title: "Accept Job",
+        nftProfiles: this.nftProfiles,
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.selectedNftProfile) {
+        this._jobService.updateJobPostWithCompletedBy({
+          ownerId: result.selectedNftProfile?.ownerId?._id,
+          jobId: jobId,
+          dob: result.selectedNftProfile?.metadata?.properties?.dob,
+          email: result.selectedNftProfile?.metadata?.properties?.email,
+          gender: result.selectedNftProfile?.metadata?.properties?.gender,
+          nftProfileTokenId: result.selectedNftProfile?.tokenId,
+        }).subscribe(
+          async (data: any) => {
+            this._messageService.showNotification(
+              "Job Post updated successfully",
+              "Fantastic!"
+            );
+          },
+          (error: any) => {
+            console.log(error);
+            this._messageService.showNotification(
+              "Something went wrong. Try again later",
+              "Error!"
+            );
+          }
+        );
+      }
+    });
+  }
+
+  getNFTProfileSerial(nftProfileTokenId: string): any {
+    const nftProfile = this.nftProfiles.find((profile) => profile.tokenId == nftProfileTokenId);
+    return nftProfile;
+  }
 }

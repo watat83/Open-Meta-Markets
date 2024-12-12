@@ -29,6 +29,7 @@ routerJob.route('/')
     // Get All jobs
     .get([], JobSmartContract.getAllJobPosts)
     .post([], JobSmartContract.newJobPostByAccount)
+    .put([], JobSmartContract.updateJobPostWithCompletedBy)
 // .delete([], JobSmartContract.deleteAllJobs);
 
 // /api/jobs/:ownerId
